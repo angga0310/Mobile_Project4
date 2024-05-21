@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:si_lelang/HomePage.dart';
@@ -18,10 +20,29 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
     super.initState();
     Future.delayed(const Duration(seconds: 3), () async {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      int? userId = prefs.getInt('id');
-      if (userId != null) {
-        String userName = prefs.getString('name') ?? '';
-        User user = User(id: userId, name: userName, nik: '', email: '', alamat: '', nowa: '');
+      String? usernik = prefs.getString('nik') ?? '';
+      if (usernik.isNotEmpty) {
+        String userName = prefs.getString('nama') ?? '';
+        String userKelamin = prefs.getString('jenis_kelamin') ?? '';
+        String userTempatLahir = prefs.getString('tempat_lahir') ?? '';
+        DateTime userTanggalLahir = DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ?? DateTime.now();
+        String userAlamat = prefs.getString('alamat') ?? '';
+        String userNohp = prefs.getString('nohp') ?? '';
+        Uint8List userFoto = base64Decode(prefs.getString('foto') ?? '');
+        String userEmail = prefs.getString('email') ?? '';
+
+        User user = User(
+          nik: usernik,
+          nama: userName,
+          jenis_kelamin: userKelamin,
+          tempat_lahir: userTempatLahir,
+          tanggal_lahir: userTanggalLahir,
+          alamat: userAlamat,
+          nohp: userNohp,
+          foto: userFoto,
+          email: userEmail,
+        );
+
         // Kirim informasi user sebagai arguments
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -30,12 +51,12 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
           ),
         );
       } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => Loginpage()),
-        );
-      }
-    });
-  }
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => Loginpage()),
+              );
+            }
+          });
+        }
 
   @override
   Widget build(BuildContext context) {

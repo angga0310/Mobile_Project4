@@ -7,23 +7,27 @@ part of 'user.dart';
 // **************************************************************************
 
 User _$UserFromJson(Map<String, dynamic> json) => User(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String,
-      nik: json['nik'] as String,
-      email: json['email'] as String,
+      nik: json['nik'].toString(),
+      nama: json['nama'] as String,
+      jenis_kelamin: json['jenis_kelamin'] as String,
+      tempat_lahir: json['tempat_lahir'] as String,
+      tanggal_lahir: DateTime.parse(json['tanggal_lahir'] as String),
       alamat: json['alamat'] as String,
-      nowa: json['no_wa'] as String,
+      nohp: json['nohp'] as String,
+      foto: User._uint8ListFromBase64(json['foto'] as String),
+      email: json['email'] as String,
       password: json['password'] as String? ?? '',
-      level: (json['level'] as num?)?.toInt() ?? 1,
     );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
       'nik': instance.nik,
-      'email': instance.email,
+      'nama': instance.nama,
+      'jenis_kelamin': instance.jenis_kelamin,
+      'tempat_lahir': instance.tempat_lahir,
+      'tanggal_lahir': instance.tanggal_lahir.toIso8601String(),
       'alamat': instance.alamat,
-      'no_wa': instance.nowa,
+      'nohp': instance.nohp,
+      'foto': User._uint8ListToBase64(instance.foto),
+      'email': instance.email,
       'password': instance.password,
-      'level': instance.level,
     };

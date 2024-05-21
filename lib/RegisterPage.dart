@@ -1,14 +1,19 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:si_lelang/LoginPage.dart';
 import 'package:si_lelang/database/api.dart';
+import 'package:si_lelang/textfield/gender.dart';
+import 'package:si_lelang/textfield/tanggallahir.dart';
 import 'package:si_lelang/textfield/textfield.dart';
 import 'package:si_lelang/textfield/textfieldpw.dart';
 import 'package:si_lelang/model/user.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -19,13 +24,24 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController namacontroller = TextEditingController();
   final TextEditingController nikcontroller = TextEditingController();
-  final TextEditingController emailcontroller = TextEditingController();
+  final TextEditingController namacontroller = TextEditingController();
+  final TextEditingController jeniskelamincontroller = TextEditingController();
+  final TextEditingController tempatlahircontroller = TextEditingController();
+  final TextEditingController tanggallahircontroller = TextEditingController();
   final TextEditingController alamatcontroller = TextEditingController();
-  final TextEditingController nowacontroller = TextEditingController();
+  final TextEditingController nohpcontroller = TextEditingController();
+  final TextEditingController emailcontroller = TextEditingController();
   final TextEditingController passwordcontroller = TextEditingController();
   final TextEditingController repasswordcontroller = TextEditingController();
+  String? selectedGender;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedGender = null;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +155,53 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         const SizedBox(height: 12),
+                          Container(
+                            width: 390,
+                            child: CustomTextField(
+                              hintText: 'Tempat Lahir anda',
+                              labelText: 'Tempat Lahir',
+                              prefixIcon: Icons.location_on_outlined,
+                              controller: tempatlahircontroller,
+                              validator: (value) {
+                                if (value!.isEmpty) {
+                                  return 'Tempat lahir harus diisi';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            width: 390,
+                            child: DatePickerField(
+                              hintText: 'Tanggal lahir anda',
+                              labelText: 'Tanggal Lahir',
+                              prefixIcon: Icons.calendar_month_outlined,
+                              controller: tanggallahircontroller,
+                              onDateSelected: (DateTime? date) {
+                                if (date != null) {
+                                  tanggallahircontroller.text = DateFormat('yyyy-MM-dd').format(date);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            width: 390,
+                            child: JenisKelamin(
+                              hintText: 'Jenis Kelamin',
+                              labelText: 'Jenis Kelamin',
+                              prefixIcon: Icons.person_2_outlined,
+                              value: selectedGender,
+                              items: ['Laki-Laki', 'Perempuan'],
+                              onChanged: (String? value) {
+                                setState(() {
+                                  selectedGender = value;
+                                });
+                              },
+                            ),
+                          ),
+                        const SizedBox(height: 12),
                         Container(
                           width: 390,
                           child: CustomTextField(
@@ -181,7 +244,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             hintText: 'No. Whatsapp Anda',
                             labelText: 'No Whatsapp',
                             prefixIcon: Icons.call_outlined,
-                            controller: nowacontroller,
+                            controller: nohpcontroller,
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value!.isEmpty) {
@@ -283,12 +346,16 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void register() async {
     User user = User(
-      name: namacontroller.text,
+      nama: namacontroller.text,
       nik: nikcontroller.text,
-      email: emailcontroller.text,
+      jenis_kelamin: selectedGender!,
+      tempat_lahir: tempatlahircontroller.text,
       alamat: alamatcontroller.text,
-      nowa: nowacontroller.text,
-      password: passwordcontroller.text
+      nohp: nohpcontroller.text,
+      email: emailcontroller.text,
+      password: passwordcontroller.text,
+      tanggal_lahir: DateTime.parse(tanggallahircontroller.text),
+      foto: Uint8List(0)
       );
 
       try {

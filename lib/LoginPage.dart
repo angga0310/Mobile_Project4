@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -341,7 +342,16 @@ void login() async {
     String email = emailcontroller.text;
     String password = passwordcontroller.text;
 
-    var response = await http.get(Uri.parse("${Api.urlLogin}?email=$email&password=$password"));
+    var response = await http.post(
+      Uri.parse(Api.urlLogin),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
+    );
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
     if (response.statusCode == 200) {
       // Request successful, parse the response body
       Map<String, dynamic> json = jsonDecode(response.body.toString());
@@ -355,14 +365,21 @@ void login() async {
         await prefs.remove('rememberedEmail');
       }
 
-      SharedPreferences prefss = await SharedPreferences.getInstance();
-        await prefss.setInt('id', user.id);
-        await prefss.setString('name', user.name);
-        await prefss.setInt('level', user.level);
+      // Save user data in shared preferences
+      await prefs.setString('nik', user.nik);
+      await prefs.setString('nama', user.nama);
+      await prefs.setString('jenis_kelamin', user.jenis_kelamin);
+      await prefs.setString('tempat_lahir', user.tempat_lahir);
+      await prefs.setString('tanggal_lahir', user.tanggal_lahir.toIso8601String());
+      await prefs.setString('alamat', user.alamat);
+      await prefs.setString('nohp', user.nohp);
+      await prefs.setString('foto', base64Encode(user.foto));
+      await prefs.setString('email', user.email);
+
 
       Get.snackbar(
         'Login Berhasil',
-        'Selamat datang, ${user.name}',
+        'Selamat datang, ${user.nama}',
         backgroundColor: Colors.white,
         duration: const Duration(seconds: 2),
         titleText: const Text(
@@ -370,7 +387,7 @@ void login() async {
           style: TextStyle(fontFamily: 'Lexend', fontSize: 20, color: Color(0xFF35755D)),
         ),
         messageText: Text(
-          'Selamat datang, ${user.name}',
+          'Selamat datang, ${user.nama}',
           style: const TextStyle(fontFamily: 'Lexend', fontSize: 16, color: Color(0xFF35755D)),
         ),
       );
@@ -399,18 +416,36 @@ void login() async {
 
 void checkLoginStatus() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  int? userId = prefs.getInt('id');
-  if (userId != null) {
-    String userName = prefs.getString('name') ?? '';
-    User user = User(id: userId, name: userName, nik: '', email: '', alamat: '', nowa: '');
+  String? usernik = prefs.getString('nik') ?? '';
+  if (usernik.isNotEmpty) {
+    String userName = prefs.getString('nama') ?? '';
+        String userKelamin = prefs.getString('jenis_kelamin') ?? '';
+        String userTempatLahir = prefs.getString('tempat_lahir') ?? '';
+        DateTime userTanggalLahir = DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ?? DateTime.now();
+        String userAlamat = prefs.getString('alamat') ?? '';
+        String userNohp = prefs.getString('nohp') ?? '';
+        Uint8List userFoto = base64Decode(prefs.getString('foto') ?? '');
+        String userEmail = prefs.getString('email') ?? '';
+
+        User user = User(
+          nik: usernik,
+          nama: userName,
+          jenis_kelamin: userKelamin,
+          tempat_lahir: userTempatLahir,
+          tanggal_lahir: userTanggalLahir,
+          alamat: userAlamat,
+          nohp: userNohp,
+          foto: userFoto,
+          email: userEmail,
+        );
     Get.off(const HomePage(), arguments: user);
   }
 }
 
 void _logout() async {
   SharedPreferences prefss = await SharedPreferences.getInstance();
-  await prefss.remove('id');
-  await prefss.remove('name');
+  await prefss.remove('nik');
+  await prefss.remove('nama');
   Get.offAll(const Loginpage());
 }
 

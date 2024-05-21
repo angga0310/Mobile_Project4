@@ -5,18 +5,18 @@ import 'package:si_lelang/DetailBarangPage.dart';
 import 'package:si_lelang/model/barang.dart';
 
 class BarangCard extends StatelessWidget {
-  final Uint8List foto;
+  final Uint8List foto_barang;
   final String nama;
   final String deskripsi;
-  final int harga;
+  final int harga_barang;
   final Barang barang;
 
   const BarangCard({
     Key? key,
-    required this.foto,
+    required this.foto_barang,
     required this.nama,
     required this.deskripsi,
-    required this.harga,
+    required this.harga_barang,
     required this.barang,
   }) : super(key: key);
 
@@ -48,7 +48,7 @@ class BarangCard extends StatelessWidget {
                   topRight: Radius.circular(8.0),
                 ),
                 child: Image.memory(
-                  foto,
+                  foto_barang,
                   height: 157,
                   width: 192,
                   fit: BoxFit.cover,
@@ -72,7 +72,7 @@ class BarangCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    deskripsi,
+                    deskripsi.length > 50 ? '${deskripsi.substring(0, 50)}...' : deskripsi,
                     style: const TextStyle(
                       color: Color(0xFF606060),
                       fontSize: 10,
@@ -83,7 +83,7 @@ class BarangCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Rp ${harga.toString()}',
+                    'Rp ${harga_barang.toString()}',
                     style: const TextStyle(
                       color: Color(0xFF20AD2E),
                       fontSize: 14,

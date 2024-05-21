@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:si_lelang/LoginPage.dart';
+import 'package:si_lelang/FavoritePage.dart';
 import 'package:si_lelang/model/barang.dart';
 import 'package:si_lelang/model/barangcard.dart';
 import 'package:si_lelang/model/user.dart';
@@ -20,54 +23,35 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  List<dynamic> users = [];
   List<dynamic> barangs = [];
+  bool isLoading = true;
+  late User currentUser;
   String namaUser = '';
   final TextEditingController _searchController = TextEditingController();
 
 
-  Future<void> _onItemTapped(int index) async {
-    if (index == 1) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      int userLevel = prefs.getInt('level') ?? 1;
-      if (userLevel == 2) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      } else {
-        // Tampilkan pesan akses ditolak dengan penundaan
-        Future.delayed(Duration.zero, () {
-          Get.snackbar(
-            'Akses Ditolak',
-            'Anda tidak memiliki izin untuk mengakses halaman ini',
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-            titleText: const Text(
-              'Akses Ditolak',
-              style: TextStyle(
-                  fontFamily: 'Lexend', fontSize: 20, color: Colors.white),
-            ),
-            messageText: const Text(
-              'Anda tidak memiliki izin untuk mengakses halaman ini',
-              style: TextStyle(
-                  fontFamily: 'Lexend', fontSize: 16, color: Colors.white),
-            ),
-          );
-        });
-      }
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
+Future<void> _onItemTapped(int index) async {
+  setState(() {
+    _selectedIndex = index;
+    if (_selectedIndex == 0){
+      _getBarang();
+    } else if(_selectedIndex == 1){
+      _getOpenBarang();
     }
-  }
+    barangs.clear();
+  });
+}
 
-  @override
-  void initState() {
-    super.initState();
-    // Get.put(BarangController()).fetchData();
+@override
+void initState() {
+  super.initState();
+  _loadUserData().then((user) {
+    setState(() {
+      currentUser = user;
+    });
     _getBarang();
-  }
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +103,7 @@ class _HomePageState extends State<HomePage> {
                           left: 20,
                           top: 72,
                           child: Text(
-                            user.name,
+                            user.nama.split(' ').take(2).join(' '),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 24,
@@ -138,7 +122,9 @@ class _HomePageState extends State<HomePage> {
                                 shape: BoxShape.circle,
                                 color: Color(0xFFD9D9D9)),
                             child: IconButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                // Get.to(FavoritePage)
+                              },
                               icon: const Icon(Icons.favorite_outline),
                               color: const Color(0xFF35755D),
                             ),
@@ -165,7 +151,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 suffixIcon: IconButton(
                                   onPressed: () {
-                                    _cariBarang(_searchController.text);
+                                    // _cariBarang(_searchController.text);
                                   },
                                   icon: const Icon(Icons.search),
                                 ),
@@ -288,30 +274,6 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   ),
-                  Stack(
-                    children: [
-                      Positioned(
-                        left: 10,
-                        top: 380,
-                        child: Container(
-                          width: MediaQuery.of(context).size.width - 20,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.5),
-                                spreadRadius: 1,
-                                blurRadius: 4,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
                   const SizedBox(height: 40,),
                   Padding(
                     padding: const EdgeInsets.only(left: 10, right: 10),
@@ -328,11 +290,11 @@ class _HomePageState extends State<HomePage> {
                       itemBuilder: (context, index) {
                         var barang = barangs[index];
                         return BarangCard(
-                          foto: barang.foto,
-                          nama: barang.nama,
+                          foto_barang: barang.foto_barang,
+                          nama: barang.nama_barang,
                           deskripsi: barang.deskripsi,
-                          harga: barang.harga,
-                          barang: barang,
+                          harga_barang: barang.harga_barang,
+                          barang: barang
                         );
                       },
                     ),
@@ -343,12 +305,29 @@ class _HomePageState extends State<HomePage> {
           ),
 
           // Halaman 2
-          Center(
-            child: ElevatedButton(
-                onPressed: () {
-                  _logout();
-                },
-                child: const Text('Logout')),
+          Padding(
+            padding: const EdgeInsets.only(left: 10, right: 10),
+            child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 10,
+              childAspectRatio: 187 / 270,
+            ),
+            itemCount: barangs.length,
+            itemBuilder: (context, index) {
+              var barang = barangs[index];
+              return BarangCard(
+                foto_barang: barang.foto_barang,
+                nama: barang.nama_barang,
+                deskripsi: barang.deskripsi,
+                harga_barang: barang.harga_barang,
+                          barang: barang
+              );
+            },
+            ),
           ),
 
           // Halaman 3
@@ -370,40 +349,253 @@ class _HomePageState extends State<HomePage> {
           ),
 
           // Halaman 4
-          ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: Text('Nama: ${user.name}'),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment(-0.00, -1.00),
+              end: Alignment(0, 4),
+              colors: [Colors.white, Color(0xFFDDDDDD)],
             ),
-            ListTile(
-              leading: const Icon(Icons.email),
-              title: Text('Email: ${user.email}'),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const Padding(
+                padding: EdgeInsets.only(left: 20.0, top: 32),
+                child: Text(
+                  'Profile',
+                  style: TextStyle(
+                    color: Color(0xFF35755D),
+                    fontSize: 24,
+                    fontFamily: 'Lexend',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: 54),
+                child: Center(
+                  child: Container(
+                    width: 81,
+                    height: 81,
+                    decoration: const ShapeDecoration(
+                      color: Color(0xFF80C4B3),
+                      shape: OvalBorder(),
+                    ),
+                    child: Center(
+                      child: Text(
+                        user.nama.substring(0, 1),
+                        style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 40,
+                        fontFamily: 'Lexend',
+                        fontWeight: FontWeight.w700,
+                        height: 0,
+                      ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Center(
+                  child: Text(
+                    user.nama,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontFamily: 'Lexend',
+                      fontWeight: FontWeight.w400,
+                      height: 0,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Center(
+                  child: Text(
+                    user.jenis_kelamin,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 12,
+                      fontFamily: 'Lexend',
+                      fontWeight: FontWeight.w400,
+                      height: 0,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 60),
+              Center(
+              child: Container(
+                width: 390,
+                height: 60,
+                decoration: ShapeDecoration(
+                  color: Color(0xFFC4C4C4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(left: 15.0), // Adjust padding as needed
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.email_outlined, // Replace with the desired icon
+                          color: Color(0xFF606060),
+                        ),
+                        SizedBox(width: 12), // Space between icon and text
+                        Text(
+                        user.email,
+                        style: const TextStyle(
+                          color: Color(0xFF606060),
+                          fontSize: 15,
+                          fontFamily: 'Lexend',
+                          fontWeight: FontWeight.w500,
+                          height: 0,
+                        ),
+                      ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.phone),
-              title: Text('Nomor Telepon: ${user.nowa}'),
+            SizedBox(height: 12,),
+            Center(
+              child: Container(
+                width: 390,
+                height: 60,
+                decoration: ShapeDecoration(
+                  color: Color(0xFFC4C4C4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(left: 15.0), // Adjust padding as needed
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.calendar_month_outlined, // Replace with the desired icon
+                          color: Color(0xFF606060),
+                        ),
+                        SizedBox(width: 12), // Space between icon and text
+                        Text(
+                        user.tanggal_lahir.toString().substring(0, 10),
+                        style: const TextStyle(
+                          color: Color(0xFF606060),
+                          fontSize: 15,
+                          fontFamily: 'Lexend',
+                          fontWeight: FontWeight.w500,
+                          height: 0,
+                        ),
+                      ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Tambahkan aksi untuk mengedit profil
-              },
-              child: const Text('Edit Profil'),
+            SizedBox(height: 12,),
+            Center(
+              child: Container(
+                width: 390,
+                height: 60,
+                decoration: ShapeDecoration(
+                  color: Color(0xFFC4C4C4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(left: 15.0), // Adjust padding as needed
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.call_outlined, // Replace with the desired icon
+                          color: Color(0xFF606060),
+                        ),
+                        SizedBox(width: 12), // Space between icon and text
+                        Text(
+                        user.nohp,
+                        style: const TextStyle(
+                          color: Color(0xFF606060),
+                          fontSize: 15,
+                          fontFamily: 'Lexend',
+                          fontWeight: FontWeight.w500,
+                          height: 0,
+                        ),
+                      ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-            ElevatedButton(
+            SizedBox(height: 44,),
+            Center(
+              child: ElevatedButton(
               onPressed: () {
                 _logout();
               },
-              child: const Text('Logout'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(width: 0.50, color: Color(0xFF606060)),
+                  ),
+                ),
+                child: Ink(
+                  width: 390,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Logout',
+                          style: TextStyle(
+                            color: Color(0xFFFF0000),
+                            fontSize: 15,
+                            fontFamily: 'Lexend',
+                            fontWeight: FontWeight.w500,
+                            height: 0,
+                          ),
+                        ),
+                        SizedBox(width: 12,),
+                        Icon(Icons.logout_outlined,
+                        color: Color(0xFFFF0000),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ],
+            ],
+          ),
         )
-        ],
+      ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.shifting,
+        type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -462,9 +654,8 @@ class _HomePageState extends State<HomePage> {
           ElevatedButton(
             onPressed: () async {
               SharedPreferences prefs = await SharedPreferences.getInstance();
-              prefs.remove('id'); // Menghapus data id dari SharedPreferences
-              prefs
-                  .remove('name'); // Menghapus data name dari SharedPreferences
+              prefs.remove('nik'); // Menghapus data id dari SharedPreferences
+              prefs.remove('nama'); // Menghapus data name dari SharedPreferences
               await Future.delayed(const Duration(
                   milliseconds: 500)); // Menunda navigasi selama 500 milidetik
               Get.offAll(const Loginpage());
@@ -487,16 +678,45 @@ void _getBarang() async {
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body)['data'];
 
+      Uint8List? decodeBase64(dynamic source) {
+        if (source != null && source is String && source.isNotEmpty) {
+          try {
+            return base64Decode(source);
+          } catch (e) {
+            print('Error decoding base64 string: $e');
+          }
+        }
+        return null;
+      }
+
       for (int i = 0; i < data.length; i++) {
         Map<String, dynamic> barangMap = data[i];
+      
 
-        Uint8List? foto = base64Decode(barangMap['foto']);
+        Uint8List? foto_barang = decodeBase64(barangMap['foto_barang']);
+        Uint8List? foto_barang_depan = decodeBase64(barangMap['foto_barang_depan']);
+        Uint8List? foto_barang_belakang = decodeBase64(barangMap['foto_barang_belakang']);
+        Uint8List? foto_barang_kanan = decodeBase64(barangMap['foto_barang_kanan']);
+        Uint8List? foto_barang_kiri = decodeBase64(barangMap['foto_barang_kiri']);
+
         Barang barang = Barang(
-          id: barangMap['id'],
-          nama: barangMap['nama'],
+          id_barang: barangMap['id_barang'],
+          nama_barang: barangMap['nama_barang'],
+          kategori_barang: barangMap['kategori_barang'],
+          kota: barangMap['kota'],
+          provinsi: barangMap['provinsi'],
+          harga_barang: barangMap['harga_barang'],
           deskripsi: barangMap['deskripsi'],
-          harga: barangMap['harga'],
-          foto: foto,
+          kelipatan: barangMap['kelipatan'],
+          tgl_publish: DateTime.parse(barangMap['tgl_publish']),
+          tgl_expired: DateTime.parse(barangMap['tgl_expired']),
+          foto_barang: foto_barang,
+          foto_barang_depan: foto_barang_depan,
+          foto_barang_belakang: foto_barang_belakang,
+          foto_barang_kanan: foto_barang_kanan,
+          foto_barang_kiri: foto_barang_kiri,
+          status: barangMap['status'],
+          nik: barangMap['nik']
         );
         setState(() {
           barangs.add(barang);
@@ -507,25 +727,107 @@ void _getBarang() async {
     }
   }
 
-void _cariBarang(String keyword) {
-  List<dynamic> filteredBarangs = [];
+void _getOpenBarang() async {
+    var response = await http.get(Uri.parse(Api.urlgetopenbarang));
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body)['data'];
 
-  if (keyword.isEmpty) {
-    setState(() {
-      filteredBarangs.addAll(barangs);
-    });
-  } else {
-    barangs.forEach((barang) {
-      if (barang.nama.toLowerCase().contains(keyword.toLowerCase())) {
-        filteredBarangs.add(barang);
+      Uint8List? decodeBase64(dynamic source) {
+        if (source != null && source is String && source.isNotEmpty) {
+          try {
+            return base64Decode(source);
+          } catch (e) {
+            print('Error decoding base64 string: $e');
+          }
+        }
+        return null;
       }
-    });
+
+      for (int i = 0; i < data.length; i++) {
+        Map<String, dynamic> barangMap = data[i];
+      
+
+        Uint8List? foto_barang = decodeBase64(barangMap['foto_barang']);
+        Uint8List? foto_barang_depan = decodeBase64(barangMap['foto_barang_depan']);
+        Uint8List? foto_barang_belakang = decodeBase64(barangMap['foto_barang_belakang']);
+        Uint8List? foto_barang_kanan = decodeBase64(barangMap['foto_barang_kanan']);
+        Uint8List? foto_barang_kiri = decodeBase64(barangMap['foto_barang_kiri']);
+
+        Barang barang = Barang(
+          id_barang: barangMap['id_barang'],
+          nama_barang: barangMap['nama_barang'],
+          kategori_barang: barangMap['kategori_barang'],
+          kota: barangMap['kota'],
+          provinsi: barangMap['provinsi'],
+          harga_barang: barangMap['harga_barang'],
+          deskripsi: barangMap['deskripsi'],
+          kelipatan: barangMap['kelipatan'],
+          tgl_publish: DateTime.parse(barangMap['tgl_publish']),
+          tgl_expired: DateTime.parse(barangMap['tgl_expired']),
+          foto_barang: foto_barang,
+          foto_barang_depan: foto_barang_depan,
+          foto_barang_belakang: foto_barang_belakang,
+          foto_barang_kanan: foto_barang_kanan,
+          foto_barang_kiri: foto_barang_kiri,
+          status: barangMap['status'],
+          nik: barangMap['nik']
+        );
+        setState(() {
+          barangs.add(barang);
+        });
+      }
+    } else {
+      throw Exception('Failed to load data');
+    }
   }
 
-  setState(() {
-    barangs = filteredBarangs;
-  });
-}
 
+// void _cariBarang(String keyword) {
+//   List<dynamic> filteredBarangs = [];
 
+//   if (keyword.isEmpty) {
+//     setState(() {
+//       filteredBarangs.addAll(barangs);
+//     });
+//   } else {
+//     barangs.forEach((barang) {
+//       if (barang.nama.toLowerCase().contains(keyword.toLowerCase())) {
+//         filteredBarangs.add(barang);
+//       }
+//     });
+//   }
+
+//   setState(() {
+//     barangs = filteredBarangs;
+//   });
+// }
+  Future<User> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? usernik = prefs.getString('nik') ?? '';
+    if (usernik.isNotEmpty) {
+      String userName = prefs.getString('nama') ?? '';
+      String userKelamin = prefs.getString('jenis_kelamin') ?? '';
+      String userTempatLahir = prefs.getString('tempat_lahir') ?? '';
+      DateTime userTanggalLahir = DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ?? DateTime.now();
+      String userAlamat = prefs.getString('alamat') ?? '';
+      String userNohp = prefs.getString('nohp') ?? '';
+      Uint8List userFoto = base64Decode(prefs.getString('foto') ?? '');
+      String userEmail = prefs.getString('email') ?? '';
+
+      User user = User(
+        nik: usernik,
+        nama: userName,
+        jenis_kelamin: userKelamin,
+        tempat_lahir: userTempatLahir,
+        tanggal_lahir: userTanggalLahir,
+        alamat: userAlamat,
+        nohp: userNohp,
+        foto: userFoto,
+        email: userEmail,
+      );
+      return user;
+    } else {
+      throw Exception('No user data found in SharedPreferences');
+    }
+  }
 }
