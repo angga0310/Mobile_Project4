@@ -36,7 +36,7 @@ Future<void> _onItemTapped(int index) async {
     if (_selectedIndex == 0){
       _getBarang();
     } else if(_selectedIndex == 1){
-      _getOpenBarang();
+      _getBarang(onlyOpen: true);
     }
     barangs.clear();
   });
@@ -331,22 +331,33 @@ void initState() {
           ),
 
           // Halaman 3
-          SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                Container(
-                  width: MediaQuery.of(context).size.width,
-                  height: 332,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('images/bg_home.png'),
-                      fit: BoxFit.fill,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          FutureBuilder<List<dynamic>>(
+          future: dataHistory(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(
+                child: Text('Failed to load data: ${snapshot.error}'),
+              );
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text('No data available'));
+            } else {
+              return ListView.builder(
+                itemCount: snapshot.data!.length,
+                itemBuilder: (context, index) {
+                  var item = snapshot.data![index];
+                  var namabarang = item['nama_barang'] ?? 'No Name';
+                  var tawaran = item['harga_bid'] ?.toString() ?? 'No bid';
+                  return ListTile(
+                    title: Text(namabarang), // Ganti dengan properti yang sesuai
+                    subtitle: Text(tawaran), // Ganti dengan properti yang sesuai
+                  );
+                },
+              );
+            }
+          },
+        ),
 
           // Halaman 4
         Container(
@@ -673,113 +684,100 @@ void initState() {
     );
   }
 
-void _getBarang() async {
-    var response = await http.get(Uri.parse(Api.urlgetbarang));
-    if (response.statusCode == 200) {
-      List<dynamic> data = jsonDecode(response.body)['data'];
+void _getBarang({bool onlyOpen = false}) async {
+  var url = onlyOpen ? Api.urlgetopenbarang : Api.urlgetbarang;
+  var response = await http.get(Uri.parse(url));
+  
+  if (response.statusCode == 200) {
+    var responseBody = jsonDecode(response.body);
+  //  print(responseBody); // Tambahkan ini untuk melihat respons dari server
+    
+    if (responseBody is List) {
+      List<dynamic> data = responseBody; // Jika respons adalah daftar langsung
+      setState(() {
+        barangs.clear(); // Kosongkan list sebelum menambahkan data baru
+        for (var barangMap in data) {
+          Uint8List? foto_barang = decodeBase64(barangMap['foto_barang']);
+          Uint8List? foto_barang_depan = decodeBase64(barangMap['foto_barang_depan']);
+          Uint8List? foto_barang_belakang = decodeBase64(barangMap['foto_barang_belakang']);
+          Uint8List? foto_barang_kanan = decodeBase64(barangMap['foto_barang_kanan']);
+          Uint8List? foto_barang_kiri = decodeBase64(barangMap['foto_barang_kiri']);
 
-      Uint8List? decodeBase64(dynamic source) {
-        if (source != null && source is String && source.isNotEmpty) {
-          try {
-            return base64Decode(source);
-          } catch (e) {
-            print('Error decoding base64 string: $e');
-          }
-        }
-        return null;
-      }
-
-      for (int i = 0; i < data.length; i++) {
-        Map<String, dynamic> barangMap = data[i];
-      
-
-        Uint8List? foto_barang = decodeBase64(barangMap['foto_barang']);
-        Uint8List? foto_barang_depan = decodeBase64(barangMap['foto_barang_depan']);
-        Uint8List? foto_barang_belakang = decodeBase64(barangMap['foto_barang_belakang']);
-        Uint8List? foto_barang_kanan = decodeBase64(barangMap['foto_barang_kanan']);
-        Uint8List? foto_barang_kiri = decodeBase64(barangMap['foto_barang_kiri']);
-
-        Barang barang = Barang(
-          id_barang: barangMap['id_barang'],
-          nama_barang: barangMap['nama_barang'],
-          kategori_barang: barangMap['kategori_barang'],
-          kota: barangMap['kota'],
-          provinsi: barangMap['provinsi'],
-          harga_barang: barangMap['harga_barang'],
-          deskripsi: barangMap['deskripsi'],
-          kelipatan: barangMap['kelipatan'],
-          tgl_publish: DateTime.parse(barangMap['tgl_publish']),
-          tgl_expired: DateTime.parse(barangMap['tgl_expired']),
-          foto_barang: foto_barang,
-          foto_barang_depan: foto_barang_depan,
-          foto_barang_belakang: foto_barang_belakang,
-          foto_barang_kanan: foto_barang_kanan,
-          foto_barang_kiri: foto_barang_kiri,
-          status: barangMap['status'],
-          nik: barangMap['nik']
-        );
-        setState(() {
+          Barang barang = Barang(
+            id_barang: barangMap['id_barang'],
+            nama_barang: barangMap['nama_barang'],
+            kategori_barang: barangMap['kategori_barang'],
+            kota: barangMap['kota'],
+            provinsi: barangMap['provinsi'],
+            harga_barang: barangMap['harga_barang'],
+            deskripsi: barangMap['deskripsi'],
+            kelipatan: barangMap['kelipatan'],
+            tgl_publish: DateTime.parse(barangMap['tgl_publish']),
+            tgl_expired: DateTime.parse(barangMap['tgl_expired']),
+            foto_barang: foto_barang,
+            foto_barang_depan: foto_barang_depan,
+            foto_barang_belakang: foto_barang_belakang,
+            foto_barang_kanan: foto_barang_kanan,
+            foto_barang_kiri: foto_barang_kiri,
+            status: barangMap['status'],
+            nik: barangMap['nik']
+          );
           barangs.add(barang);
-        });
-      }
+        }
+      });
+    } else if (responseBody is Map && responseBody.containsKey('data')) {
+      List<dynamic> data = responseBody['data'];
+      setState(() {
+        barangs.clear(); // Kosongkan list sebelum menambahkan data baru
+        for (var barangMap in data) {
+          Uint8List? foto_barang = decodeBase64(barangMap['foto_barang']);
+          Uint8List? foto_barang_depan = decodeBase64(barangMap['foto_barang_depan']);
+          Uint8List? foto_barang_belakang = decodeBase64(barangMap['foto_barang_belakang']);
+          Uint8List? foto_barang_kanan = decodeBase64(barangMap['foto_barang_kanan']);
+          Uint8List? foto_barang_kiri = decodeBase64(barangMap['foto_barang_kiri']);
+
+          Barang barang = Barang(
+            id_barang: barangMap['id_barang'],
+            nama_barang: barangMap['nama_barang'],
+            kategori_barang: barangMap['kategori_barang'],
+            kota: barangMap['kota'],
+            provinsi: barangMap['provinsi'],
+            harga_barang: barangMap['harga_barang'],
+            deskripsi: barangMap['deskripsi'],
+            kelipatan: barangMap['kelipatan'],
+            tgl_publish: DateTime.parse(barangMap['tgl_publish']),
+            tgl_expired: DateTime.parse(barangMap['tgl_expired']),
+            foto_barang: foto_barang,
+            foto_barang_depan: foto_barang_depan,
+            foto_barang_belakang: foto_barang_belakang,
+            foto_barang_kanan: foto_barang_kanan,
+            foto_barang_kiri: foto_barang_kiri,
+            status: barangMap['status'],
+            nik: barangMap['nik']
+          );
+          barangs.add(barang);
+        }
+      });
     } else {
-      throw Exception('Failed to load data');
+      throw Exception('Unexpected JSON format');
+    }
+  } else {
+    throw Exception('Failed to load data');
+  }
+}
+
+Uint8List? decodeBase64(dynamic source) {
+  if (source != null && source is String && source.isNotEmpty) {
+    try {
+      return base64Decode(source);
+    } catch (e) {
+      print('Error decoding base64 string: $e');
     }
   }
+  return null;
+}
 
-void _getOpenBarang() async {
-    var response = await http.get(Uri.parse(Api.urlgetopenbarang));
-    if (response.statusCode == 200) {
-      List<dynamic> data = jsonDecode(response.body)['data'];
 
-      Uint8List? decodeBase64(dynamic source) {
-        if (source != null && source is String && source.isNotEmpty) {
-          try {
-            return base64Decode(source);
-          } catch (e) {
-            print('Error decoding base64 string: $e');
-          }
-        }
-        return null;
-      }
-
-      for (int i = 0; i < data.length; i++) {
-        Map<String, dynamic> barangMap = data[i];
-      
-
-        Uint8List? foto_barang = decodeBase64(barangMap['foto_barang']);
-        Uint8List? foto_barang_depan = decodeBase64(barangMap['foto_barang_depan']);
-        Uint8List? foto_barang_belakang = decodeBase64(barangMap['foto_barang_belakang']);
-        Uint8List? foto_barang_kanan = decodeBase64(barangMap['foto_barang_kanan']);
-        Uint8List? foto_barang_kiri = decodeBase64(barangMap['foto_barang_kiri']);
-
-        Barang barang = Barang(
-          id_barang: barangMap['id_barang'],
-          nama_barang: barangMap['nama_barang'],
-          kategori_barang: barangMap['kategori_barang'],
-          kota: barangMap['kota'],
-          provinsi: barangMap['provinsi'],
-          harga_barang: barangMap['harga_barang'],
-          deskripsi: barangMap['deskripsi'],
-          kelipatan: barangMap['kelipatan'],
-          tgl_publish: DateTime.parse(barangMap['tgl_publish']),
-          tgl_expired: DateTime.parse(barangMap['tgl_expired']),
-          foto_barang: foto_barang,
-          foto_barang_depan: foto_barang_depan,
-          foto_barang_belakang: foto_barang_belakang,
-          foto_barang_kanan: foto_barang_kanan,
-          foto_barang_kiri: foto_barang_kiri,
-          status: barangMap['status'],
-          nik: barangMap['nik']
-        );
-        setState(() {
-          barangs.add(barang);
-        });
-      }
-    } else {
-      throw Exception('Failed to load data');
-    }
-  }
 
 
 // void _cariBarang(String keyword) {
@@ -830,4 +828,18 @@ void _getOpenBarang() async {
       throw Exception('No user data found in SharedPreferences');
     }
   }
+
+Future<List<dynamic>> dataHistory() async {
+  var url = Uri.parse('${Api.urlhistory}?nik=${currentUser.nik}');
+  
+  var response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    List<dynamic> data = json.decode(response.body);
+    return data;
+  } else {
+    throw Exception('Failed to load data: ${response.body}');
+  }
+}
+
 }

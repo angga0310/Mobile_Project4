@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:si_lelang/DetailBarangPage.dart';
+import 'package:intl/intl.dart';
 import 'package:si_lelang/model/barang.dart';
 
 class BarangCard extends StatelessWidget {
@@ -39,21 +40,52 @@ class BarangCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 157,
-              width: 192,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8.0),
-                  topRight: Radius.circular(8.0),
+            Stack(
+              children: [
+                Positioned(
+                  child: Container(
+                    height: 157,
+                    width: 192,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8.0),
+                        topRight: Radius.circular(8.0),
+                      ),
+                      child: Image.memory(
+                        foto_barang,
+                        height: 157,
+                        width: 192,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                 ),
-                child: Image.memory(
-                  foto_barang,
-                  height: 157,
-                  width: 192,
-                  fit: BoxFit.cover,
-                ),
-              ),
+                 if (barang.status == 'Open')
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      width: 36,
+                      height: 18,
+                      decoration: ShapeDecoration(
+                        color: Color(0xFFFF782C),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Live',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontFamily: 'Lexend',
+                            fontWeight: FontWeight.w600,
+                            height: 0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -83,7 +115,7 @@ class BarangCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Rp ${harga_barang.toString()}',
+                    formatRupiah(harga_barang),
                     style: const TextStyle(
                       color: Color(0xFF20AD2E),
                       fontSize: 14,
@@ -92,6 +124,7 @@ class BarangCard extends StatelessWidget {
                       height: 0,
                     ),
                   ),
+                 
                 ],
               ),
             ),
@@ -99,5 +132,14 @@ class BarangCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+    String formatRupiah(int value) {
+    final formatCurrency = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+    return formatCurrency.format(value);
   }
 }

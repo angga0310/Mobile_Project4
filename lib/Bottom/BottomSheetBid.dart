@@ -3,7 +3,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/get_navigation.dart';
 import 'package:http/http.dart' as http;
+import 'package:si_lelang/HomePage.dart';
 import 'package:si_lelang/database/api.dart';
 
 class BottomSheetBid {
@@ -100,6 +103,7 @@ class BottomSheetBid {
                     await bidBarang(bidValue);
                     completer.complete(bidValue);
                     Navigator.pop(context);
+                  //  Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
                   },
                   child: Center(
                     child: Text('Ajukan Tawaran'),
@@ -132,7 +136,19 @@ class BottomSheetBid {
       if (response.statusCode == 200) {
         print('Bid berhasil');
         print(jsonDecode(response.body)['data']);
-
+        Get.snackbar(
+          'Berhasil Menawar',
+          'Tunggu konfirmasi dari pemilik',
+          backgroundColor: const Color(0xFF35755D),
+          titleText: const Text(
+            'Berhasil Menawar',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0, fontFamily: 'Lexend', color: Colors.white),
+          ),
+          messageText: const Text(
+            'Tunggu konfirmasi dari pemilik',
+            style: TextStyle(fontSize: 16.0, fontFamily: 'Lexend', color: Colors.white),
+          ),
+        );
       } else {
         print('Bid gagal');
         print(jsonDecode(response.body)['message']);

@@ -1,5 +1,5 @@
 class Api{
-  static const String ipServer = 'http://192.168.1.11:8000';
+  static const String ipServer = 'http://192.168.1.25:8000';
 
   static const String urlRegister = '$ipServer/api/register';
   static const String urlLogin = '$ipServer/api/login';
@@ -8,4 +8,5 @@ class Api{
   static const String urlgetbarang = '$ipServer/api/getallbarang';
   static const String urlgetopenbarang = '$ipServer/api/getopenbarang';
   static const String urlbid = '$ipServer/api/bidbarang';
+  static const String urlhistory = '$ipServer/api/history';
 }
