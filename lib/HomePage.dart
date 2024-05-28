@@ -24,7 +24,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   List<dynamic> barangs = [];
-  bool isLoading = true;
+  bool isLoading = false;
   late User currentUser;
   String namaUser = '';
   final TextEditingController _searchController = TextEditingController();
@@ -349,9 +349,15 @@ void initState() {
                   var item = snapshot.data![index];
                   var namabarang = item['nama_barang'] ?? 'No Name';
                   var tawaran = item['harga_bid'] ?.toString() ?? 'No bid';
-                  return ListTile(
-                    title: Text(namabarang), // Ganti dengan properti yang sesuai
-                    subtitle: Text(tawaran), // Ganti dengan properti yang sesuai
+                  var status = item['status'] ?? 'unknown';
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: getStatusColor(status)
+                    ),
+                    child: ListTile(
+                      title: Text(namabarang), // Ganti dengan properti yang sesuai
+                      subtitle: Text(tawaran), // Ganti dengan properti yang sesuai
+                    ),
                   );
                 },
               );
@@ -829,17 +835,31 @@ Uint8List? decodeBase64(dynamic source) {
     }
   }
 
-Future<List<dynamic>> dataHistory() async {
-  var url = Uri.parse('${Api.urlhistory}?nik=${currentUser.nik}');
-  
-  var response = await http.get(url);
+  Future<List<dynamic>> dataHistory() async {
+    var url = Uri.parse('${Api.urlhistory}?nik=${currentUser.nik}');
+    
+    var response = await http.get(url);
 
-  if (response.statusCode == 200) {
-    List<dynamic> data = json.decode(response.body);
-    return data;
-  } else {
-    throw Exception('Failed to load data: ${response.body}');
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      return data;
+    } else {
+      throw Exception('Failed to load data: ${response.body}');
+    }
   }
-}
+
+  Color getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return Colors.grey;
+      case 'berhasil':
+        return Colors.green;
+      case 'kalah':
+        return Colors.red;
+      default:
+        return Colors.white;
+    }
+  }
+
 
 }
