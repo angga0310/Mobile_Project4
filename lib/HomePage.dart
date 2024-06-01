@@ -1,13 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:si_lelang/LoginPage.dart';
-import 'package:si_lelang/FavoritePage.dart';
+import 'package:si_lelang/PembayaranPage.dart';
 import 'package:si_lelang/model/barang.dart';
 import 'package:si_lelang/model/barangcard.dart';
 import 'package:si_lelang/model/user.dart';
@@ -331,39 +329,135 @@ void initState() {
           ),
 
           // Halaman 3
-          FutureBuilder<List<dynamic>>(
-          future: dataHistory(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(
-                child: Text('Failed to load data: ${snapshot.error}'),
-              );
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(child: Text('No data available'));
-            } else {
-              return ListView.builder(
-                itemCount: snapshot.data!.length,
-                itemBuilder: (context, index) {
-                  var item = snapshot.data![index];
-                  var namabarang = item['nama_barang'] ?? 'No Name';
-                  var tawaran = item['harga_bid'] ?.toString() ?? 'No bid';
-                  var status = item['status'] ?? 'unknown';
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: getStatusColor(status)
-                    ),
-                    child: ListTile(
-                      title: Text(namabarang), // Ganti dengan properti yang sesuai
-                      subtitle: Text(tawaran), // Ganti dengan properti yang sesuai
-                    ),
-                  );
-                },
-              );
-            }
-          },
-        ),
+FutureBuilder<List<dynamic>>(
+  future: dataHistory(),
+  builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return Center(child: CircularProgressIndicator());
+    } else if (snapshot.hasError) {
+      return Center(
+        child: Text('Failed to load data: ${snapshot.error}'),
+      );
+    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+      return Center(child: Text('No data available'));
+    } else {
+      return Column(
+        children: [
+          SizedBox(height: 40,),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              'Riwayat Tawaran',
+              style: TextStyle(
+                fontSize: 24,
+                fontFamily: 'Lexend',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                var item = snapshot.data![index];
+                var namabarang = item['nama_barang'] ?? 'No Name';
+                var tawaran = item['harga_bid']?.toString() ?? 'No bid';
+                var status = item['status'] ?? 'unknown';
+
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: getStatusColor(status),
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            namabarang,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Lexend',
+                            ),
+                          ),
+                          subtitle: Text(
+                            tawaran,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Lexend',
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (status == 'berhasil')
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Anda Menang Lelang',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontFamily: 'Lexend',
+                                ),
+                              ),
+                              Container(
+                                width: 120,
+                                height: 40,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Get.to(PembayaranPage());
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF35755D),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  child: Container(
+                                    width: 120,
+                                    height: 40,
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'Bayar',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontFamily: 'Lexend',
+                                        fontWeight: FontWeight.w700,
+                                        height: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Container(), // Hide the Riwayat Tawaran bar if status is not open
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+  },
+),
+
 
           // Halaman 4
         Container(
@@ -853,9 +947,9 @@ Uint8List? decodeBase64(dynamic source) {
       case 'pending':
         return Colors.grey;
       case 'berhasil':
-        return Colors.green;
+        return const Color(0xFF35755D);
       case 'kalah':
-        return Colors.red;
+        return Color.fromARGB(255, 227, 39, 39);
       default:
         return Colors.white;
     }

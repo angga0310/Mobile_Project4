@@ -1,5 +1,5 @@
 class Api{
-  static const String ipServer = 'http://192.168.1.19:8000';
+  static const String ipServer = 'http://192.168.1.10:8000';
 
   static const String urlRegister = '$ipServer/api/register';
   static const String urlLogin = '$ipServer/api/login';
