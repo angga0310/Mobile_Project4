@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -118,7 +117,7 @@ class _LoginpageState extends State<Loginpage> with SingleTickerProviderStateMix
                       ),
                     ),
                     const SizedBox(
-                      height: 20,
+                      height: 35,
                     ),
                     Center(
                       child: Column(
@@ -214,7 +213,7 @@ class _LoginpageState extends State<Loginpage> with SingleTickerProviderStateMix
                             ),
                           ),
                           const SizedBox(
-                            height: 40,
+                            height: 60,
                           ),
                           Container(
                             width: 390,
@@ -291,37 +290,8 @@ class _LoginpageState extends State<Loginpage> with SingleTickerProviderStateMix
                             ),
                           ),
                           const SizedBox(
-                            height: 30,
+                            height: 100,
                           ),
-                          const Text("Atau masuk menggunakan",
-                              style: TextStyle(
-                                color: Color(0xFF606060),
-                                fontSize: 12,
-                                fontFamily: 'Lexend',
-                                fontWeight: FontWeight.w400,
-                                height: 1,
-                              )),
-                          const SizedBox(
-                            height: 8,
-                          ),
-                          Container(
-                            height: 40,
-                            child: TextButton.icon(
-                              onPressed: () {},
-                              icon: Image.asset('images/logo_google.png'),
-                              label: const Text("Guest",
-                                  style: TextStyle(
-                                    color: Color(0xFF606060),
-                                    fontSize: 12,
-                                    fontFamily: 'Lexend',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1,
-                                  )),
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 30,
-                          )
                         ],
                       ),
                     )
@@ -354,8 +324,8 @@ void login() async {
     print('Response body: ${response.body}');
     if (response.statusCode == 200) {
       // Request successful, parse the response body
-      Map<String, dynamic> json = jsonDecode(response.body.toString());
-      User user = User.fromMap(json["user"]);
+      Map<String, dynamic> json = jsonDecode(response.body);
+      User user = User.fromJson(json["user"]);
 
       // Simpan informasi user ke dalam SharedPreferences jika checkbox ingatsaya dicentang
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -373,9 +343,8 @@ void login() async {
       await prefs.setString('tanggal_lahir', user.tanggal_lahir.toIso8601String());
       await prefs.setString('alamat', user.alamat);
       await prefs.setString('nohp', user.nohp);
-      await prefs.setString('foto', base64Encode(user.foto));
+      await prefs.setString('foto', user.foto);
       await prefs.setString('email', user.email);
-
 
       Get.snackbar(
         'Login Berhasil',
@@ -397,7 +366,7 @@ void login() async {
       Get.snackbar(
         'Login Gagal',
         'Email atau password salah',
-        backgroundColor: const Color(0xFF35755D),
+        backgroundColor: const Color(0xFFFF0000),
         overlayBlur: 1,
         duration: const Duration(seconds: 2),
         titleText: const Text(
@@ -414,33 +383,37 @@ void login() async {
 }
 
 
+
 void checkLoginStatus() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? usernik = prefs.getString('nik') ?? '';
-  if (usernik.isNotEmpty) {
+  String? usernik = prefs.getString('nik');
+  if (usernik != null && usernik.isNotEmpty) {
     String userName = prefs.getString('nama') ?? '';
-        String userKelamin = prefs.getString('jenis_kelamin') ?? '';
-        String userTempatLahir = prefs.getString('tempat_lahir') ?? '';
-        DateTime userTanggalLahir = DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ?? DateTime.now();
-        String userAlamat = prefs.getString('alamat') ?? '';
-        String userNohp = prefs.getString('nohp') ?? '';
-        Uint8List userFoto = base64Decode(prefs.getString('foto') ?? '');
-        String userEmail = prefs.getString('email') ?? '';
+    String userKelamin = prefs.getString('jenis_kelamin') ?? '';
+    String userTempatLahir = prefs.getString('tempat_lahir') ?? '';
+    DateTime userTanggalLahir =
+        DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ??
+            DateTime.now();
+    String userAlamat = prefs.getString('alamat') ?? '';
+    String userNohp = prefs.getString('nohp') ?? '';
+    String userFoto = prefs.getString('foto') ?? '';
+    String userEmail = prefs.getString('email') ?? '';
 
-        User user = User(
-          nik: usernik,
-          nama: userName,
-          jenis_kelamin: userKelamin,
-          tempat_lahir: userTempatLahir,
-          tanggal_lahir: userTanggalLahir,
-          alamat: userAlamat,
-          nohp: userNohp,
-          foto: userFoto,
-          email: userEmail,
-        );
+    User user = User(
+      nik: usernik,
+      nama: userName,
+      jenis_kelamin: userKelamin,
+      tempat_lahir: userTempatLahir,
+      tanggal_lahir: userTanggalLahir,
+      alamat: userAlamat,
+      nohp: userNohp,
+      foto: userFoto,
+      email: userEmail,
+    );
     Get.off(const HomePage(), arguments: user);
   }
 }
+
 
 void _logout() async {
   SharedPreferences prefss = await SharedPreferences.getInstance();

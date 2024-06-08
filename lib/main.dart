@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:si_lelang/SplashScreen.dart';
-import 'package:si_lelang/RegisterPage.dart';
+
 
 void main() {
   runApp(const MainApp());

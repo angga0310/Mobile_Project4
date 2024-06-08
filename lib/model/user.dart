@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:json_annotation/json_annotation.dart';
 
 part 'user.g.dart';
@@ -14,8 +11,7 @@ class User {
     DateTime tanggal_lahir;
     String alamat;
     String nohp;
-    @JsonKey(fromJson: _uint8ListFromBase64, toJson: _uint8ListToBase64)
-    Uint8List foto;
+    String foto; 
     String email;
     String password;
 
@@ -31,11 +27,7 @@ class User {
         required this.email,
         this.password = '',
     });
-    
 
-    static Uint8List _uint8ListFromBase64(String base64String) => base64Decode(base64String);
-    static String _uint8ListToBase64(Uint8List uint8List) => base64Encode(uint8List);
-
-    factory User.fromMap(Map<String, dynamic> json) => _$UserFromJson(json);
-    Map<String, dynamic> toMap() => _$UserToJson(this);
+    factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+    Map<String, dynamic> toJson() => _$UserToJson(this);
 }

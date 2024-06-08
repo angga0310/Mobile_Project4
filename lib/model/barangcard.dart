@@ -1,12 +1,14 @@
-import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:si_lelang/DetailBarangPage.dart';
 import 'package:intl/intl.dart';
+import 'package:si_lelang/database/api.dart';
 import 'package:si_lelang/model/barang.dart';
+import 'package:http/http.dart' as http;
 
-class BarangCard extends StatelessWidget {
-  final Uint8List foto_barang;
+class BarangCard extends StatefulWidget {
+  final String foto_barang;
   final String nama;
   final String deskripsi;
   final int harga_barang;
@@ -22,13 +24,28 @@ class BarangCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<BarangCard> createState() => _BarangCardState(barang: barang);
+}
+
+class _BarangCardState extends State<BarangCard> {
+  Barang barang;
+  _BarangCardState({required this.barang});
+  String imageData = '';
+
+  @override
+  void initState() {
+    super.initState();
+    getFotoBarang();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DetailBarangPage(barang: barang),
+            builder: (context) => DetailBarangPage(barang: widget.barang),
           ),
         );
       },
@@ -42,25 +59,31 @@ class BarangCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                Positioned(
-                  child: Container(
-                    height: 157,
-                    width: 192,
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(8.0),
-                        topRight: Radius.circular(8.0),
-                      ),
-                      child: Image.memory(
-                        foto_barang,
-                        height: 157,
-                        width: 192,
-                        fit: BoxFit.cover,
-                      ),
+                Container(
+                  height: 157,
+                  width: 192,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8.0),
+                      topRight: Radius.circular(8.0),
                     ),
+                    child: imageData != ''
+                        ? Image.memory(
+                            base64Decode(imageData),
+                            fit: BoxFit.cover,
+                          )
+                        : Center(
+                            child: SizedBox(
+                              height: 30,
+                              width: 30,
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF35755D),
+                              ),
+                            ),
+                          ),
                   ),
                 ),
-                 if (barang.status == 'Open')
+                if (widget.barang.status == 'Open')
                   Positioned(
                     top: 8,
                     left: 8,
@@ -69,7 +92,8 @@ class BarangCard extends StatelessWidget {
                       height: 18,
                       decoration: ShapeDecoration(
                         color: Color(0xFFFF782C),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(9)),
                       ),
                       child: Center(
                         child: Text(
@@ -93,7 +117,7 @@ class BarangCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    nama,
+                    widget.nama,
                     style: const TextStyle(
                       color: Color(0xFF1E1E1E),
                       fontSize: 16,
@@ -104,7 +128,9 @@ class BarangCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    deskripsi.length > 50 ? '${deskripsi.substring(0, 50)}...' : deskripsi,
+                    widget.deskripsi.length > 50
+                        ? '${widget.deskripsi.substring(0, 50)}...'
+                        : widget.deskripsi,
                     style: const TextStyle(
                       color: Color(0xFF606060),
                       fontSize: 10,
@@ -115,7 +141,7 @@ class BarangCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    formatRupiah(harga_barang),
+                    formatRupiah(widget.harga_barang),
                     style: const TextStyle(
                       color: Color(0xFF20AD2E),
                       fontSize: 14,
@@ -124,7 +150,6 @@ class BarangCard extends StatelessWidget {
                       height: 0,
                     ),
                   ),
-                 
                 ],
               ),
             ),
@@ -134,7 +159,22 @@ class BarangCard extends StatelessWidget {
     );
   }
 
-    String formatRupiah(int value) {
+  void getFotoBarang() async {
+    try {
+      final response = await http.get(Uri.parse(
+          '${Api.urlfoto}?image_path=${barang.foto_barang}'));
+      // final response = await http.get(Uri.parse('${Api.urlImage}/${event.uploadPamflet}?w=30&h=40'));
+      if (response.statusCode == 200) {
+        String data = json.decode(response.body)['base64Image'];
+        if (!mounted) return;
+        setState(() {
+          imageData = data.replaceAll(RegExp(r'\s'), '');
+        });
+      } else {}
+    } catch (e) {}
+  }
+
+  String formatRupiah(int value) {
     final formatCurrency = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',

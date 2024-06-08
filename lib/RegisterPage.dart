@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -14,6 +12,8 @@ import 'package:si_lelang/textfield/textfieldpw.dart';
 import 'package:si_lelang/model/user.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -36,11 +36,13 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController repasswordcontroller = TextEditingController();
   String? selectedGender;
   File? _ktpImage;
+  late String imagesDirectory;
 
   @override
   void initState() {
     super.initState();
     selectedGender = null;
+    initDirectory();
   }
 
 
@@ -402,74 +404,81 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  void register() async {
-    if (_ktpImage == null) {
-      // Tampilkan pesan kesalahan jika foto KTP belum diunggah
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mohon unggah foto KTP Anda')),
-      );
-      return;
-    }
-
-    // Konversi foto KTP menjadi base64
-    List<int> imageBytes = await _ktpImage!.readAsBytes();
-    String base64Image = base64Encode(imageBytes);
-
-    User user = User(
-      nama: namacontroller.text,
-      nik: nikcontroller.text,
-      jenis_kelamin: selectedGender!,
-      tempat_lahir: tempatlahircontroller.text,
-      alamat: alamatcontroller.text,
-      nohp: nohpcontroller.text,
-      email: emailcontroller.text,
-      password: passwordcontroller.text,
-      tanggal_lahir: DateTime.parse(tanggallahircontroller.text),
-      foto: base64Decode(base64Image),
+void register() async {
+  if (_ktpImage == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Mohon unggah foto KTP Anda')),
     );
+    return;
+  }
 
-    try {
-      var userMap = user.toMap();
-      var formdata = <String, String>{};
-      userMap.forEach((key, value) {
-        formdata[key] = value.toString();
-      });
+  String imageName = DateTime.now().millisecondsSinceEpoch.toString() + '.' + _ktpImage!.path.split('.').last;
+  File imageFile = File('$imagesDirectory/$imageName');
+  await imageFile.writeAsBytes(await _ktpImage!.readAsBytes());
 
-        print('userMap: $userMap');
-        print('formdata: $formdata');
+  User user = User(
+    nama: namacontroller.text,
+    nik: nikcontroller.text,
+    jenis_kelamin: selectedGender!,
+    tempat_lahir: tempatlahircontroller.text,
+    alamat: alamatcontroller.text,
+    nohp: nohpcontroller.text,
+    email: emailcontroller.text,
+    password: passwordcontroller.text,
+    tanggal_lahir: DateTime.parse(tanggallahircontroller.text),
+    foto: imageName,
+  );
 
-      var response = await http.post(Uri.parse(Api.urlRegister), body: formdata);
-      if (response.statusCode == 201) {
-        showAlert(
-          response.statusCode.toString(), response.body.toString()
-        );
-        Get.snackbar(
+  print('Data yang dikirim: ${user.toJson()}');
+
+  try {
+    var request = http.MultipartRequest('POST', Uri.parse(Api.urlRegister));
+    request.fields['nama'] = user.nama;
+    request.fields['nik'] = user.nik;
+    request.fields['jenis_kelamin'] = user.jenis_kelamin;
+    request.fields['tempat_lahir'] = user.tempat_lahir;
+    request.fields['alamat'] = user.alamat;
+    request.fields['nohp'] = user.nohp;
+    request.fields['email'] = user.email;
+    request.fields['password'] = user.password;
+    request.fields['tanggal_lahir'] = user.tanggal_lahir.toIso8601String();
+    request.files.add(await http.MultipartFile.fromPath('foto', imageFile.path));
+
+    var response = await request.send();
+    var responseText = await response.stream.bytesToString();
+
+    if (response.statusCode == 200) {
+      showAlert(
+        response.statusCode.toString(), responseText
+      );
+      Get.snackbar(
+        'Register Berhasil',
+        'Data berhasil ditambahkan',
+        backgroundColor: const Color(0xFF35755D),
+        titleText: const Text(
           'Register Berhasil',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0, fontFamily: 'Lexend', color: Colors.white),
+        ),
+        messageText: const Text(
           'Data berhasil ditambahkan',
-          backgroundColor: const Color(0xFF35755D),
-          titleText: const Text(
-            'Register Berhasil',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0, fontFamily: 'Lexend', color: Colors.white),
-          ),
-          messageText: const Text(
-            'Data berhasil ditambahkan',
-            style: TextStyle(fontSize: 16.0, fontFamily: 'Lexend', color: Colors.white),
-          ),
-        );
-        Get.offAll(const Loginpage());
-      } else {
-        showAlert(
-          response.statusCode.toString(), response.body.toString());
-      }
-    }catch (a) {
-      if (a is SocketException) {
-        print('Error: ${a.toString()}'); // Cetak pesan kesalahan SocketException
-        showAlert("Error", a.toString());
-      } else {
-        print('Error: ${a.toString()}'); // Cetak pesan kesalahan umum
-      }
+          style: TextStyle(fontSize: 16.0, fontFamily: 'Lexend', color: Colors.white),
+        ),
+      );
+      Get.offAll(const Loginpage());
+    } else {
+      showAlert(
+        response.statusCode.toString(), responseText);
+    }
+  } catch (a) {
+    if (a is SocketException) {
+      print('Error: ${a.toString()}'); // Cetak pesan kesalahan SocketException
+      showAlert("Error", a.toString());
+    } else {
+      print('Error: ${a.toString()}'); // Cetak pesan kesalahan umum
     }
   }
+}
+
 
 
   Future<void> showAlert(String title, String text) async {
@@ -499,15 +508,22 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Future<void> _pickImage() async {
-    final ImagePicker _picker = ImagePicker();
-    final XFile? pickedImage = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedImage != null) {
-      setState(() {
-        _ktpImage = File(pickedImage.path);
-      });
-    }
+Future<void> _pickImage() async {
+  final ImagePicker _picker = ImagePicker();
+  final XFile? pickedImage = await _picker.pickImage(source: ImageSource.gallery);
+  if (pickedImage != null) {
+    setState(() {
+      _ktpImage = File(pickedImage.path);
+    });
   }
+}
 
+Future<void> initDirectory() async {
+  imagesDirectory = '${(await getApplicationDocumentsDirectory()).path}/images';
+  Directory(imagesDirectory).create(recursive: true)
+    .then((Directory directory) {
+      print('Direktori images dibuat di: ${directory.path}');
+    });
+}
 }
 

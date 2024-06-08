@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -23,7 +22,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  List<dynamic> barangs = [];
+  List<Barang> barangs = [];
   bool isLoading = false;
   late User currentUser;
   String namaUser = '';
@@ -289,8 +288,7 @@ class _HomePageState extends State<HomePage> {
                         child: GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 10,
@@ -308,7 +306,7 @@ class _HomePageState extends State<HomePage> {
                             );
                           },
                         ),
-                      ),
+                      )
                     ],
                   ),
                 ),
@@ -953,105 +951,51 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _getBarang({bool onlyOpen = false}) async {
-    var url = onlyOpen ? Api.urlgetopenbarang : Api.urlgetbarang;
-    var response = await http.get(Uri.parse(url));
 
-    if (response.statusCode == 200) {
-      var responseBody = jsonDecode(response.body);
-      //  print(responseBody); // Tambahkan ini untuk melihat respons dari server
 
-      if (responseBody is List) {
-        List<dynamic> data =
-            responseBody; // Jika respons adalah daftar langsung
-        setState(() {
-          barangs.clear(); // Kosongkan list sebelum menambahkan data baru
-          for (var barangMap in data) {
-            Uint8List? foto_barang = decodeBase64(barangMap['foto_barang']);
-            Uint8List? foto_barang_depan =
-                decodeBase64(barangMap['foto_barang_depan']);
-            Uint8List? foto_barang_belakang =
-                decodeBase64(barangMap['foto_barang_belakang']);
-            Uint8List? foto_barang_kanan =
-                decodeBase64(barangMap['foto_barang_kanan']);
-            Uint8List? foto_barang_kiri =
-                decodeBase64(barangMap['foto_barang_kiri']);
+void _getBarang({bool onlyOpen = false}) async {
+  var url = onlyOpen ? Api.urlgetopenbarang : Api.urlgetbarang;
+  var response = await http.get(Uri.parse(url));
 
-            Barang barang = Barang(
-                id_barang: barangMap['id_barang'],
-                nama_barang: barangMap['nama_barang'],
-                kategori_barang: barangMap['kategori_barang'],
-                kota: barangMap['kota'],
-                provinsi: barangMap['provinsi'],
-                harga_barang: barangMap['harga_barang'],
-                deskripsi: barangMap['deskripsi'],
-                kelipatan: barangMap['kelipatan'],
-                tgl_publish: DateTime.parse(barangMap['tgl_publish']),
-                tgl_expired: DateTime.parse(barangMap['tgl_expired']),
-                foto_barang: foto_barang,
-                foto_barang_depan: foto_barang_depan,
-                foto_barang_belakang: foto_barang_belakang,
-                foto_barang_kanan: foto_barang_kanan,
-                foto_barang_kiri: foto_barang_kiri,
-                status: barangMap['status'],
-                nik: barangMap['nik']);
-            barangs.add(barang);
-          }
-        });
-      } else if (responseBody is Map && responseBody.containsKey('data')) {
-        List<dynamic> data = responseBody['data'];
-        setState(() {
-          barangs.clear(); // Kosongkan list sebelum menambahkan data baru
-          for (var barangMap in data) {
-            Uint8List? foto_barang = decodeBase64(barangMap['foto_barang']);
-            Uint8List? foto_barang_depan =
-                decodeBase64(barangMap['foto_barang_depan']);
-            Uint8List? foto_barang_belakang =
-                decodeBase64(barangMap['foto_barang_belakang']);
-            Uint8List? foto_barang_kanan =
-                decodeBase64(barangMap['foto_barang_kanan']);
-            Uint8List? foto_barang_kiri =
-                decodeBase64(barangMap['foto_barang_kiri']);
+  if (response.statusCode == 200) {
+    var responseBody = jsonDecode(response.body);
+    // print(responseBody); // Tambahkan ini untuk melihat respons dari server
 
-            Barang barang = Barang(
-                id_barang: barangMap['id_barang'],
-                nama_barang: barangMap['nama_barang'],
-                kategori_barang: barangMap['kategori_barang'],
-                kota: barangMap['kota'],
-                provinsi: barangMap['provinsi'],
-                harga_barang: barangMap['harga_barang'],
-                deskripsi: barangMap['deskripsi'],
-                kelipatan: barangMap['kelipatan'],
-                tgl_publish: DateTime.parse(barangMap['tgl_publish']),
-                tgl_expired: DateTime.parse(barangMap['tgl_expired']),
-                foto_barang: foto_barang,
-                foto_barang_depan: foto_barang_depan,
-                foto_barang_belakang: foto_barang_belakang,
-                foto_barang_kanan: foto_barang_kanan,
-                foto_barang_kiri: foto_barang_kiri,
-                status: barangMap['status'],
-                nik: barangMap['nik']);
-            barangs.add(barang);
-          }
-        });
-      } else {
-        throw Exception('Unexpected JSON format');
-      }
+    if (responseBody['success'] == true) {
+      List<Barang> data = (responseBody['data'] as List).map((barangMap) {
+        return Barang(
+          id_barang: barangMap['id_barang'],
+          nama_barang: barangMap['nama_barang'],
+          kategori_barang: barangMap['kategori_barang'],
+          kota: barangMap['kota'],
+          provinsi: barangMap['provinsi'],
+          harga_barang: barangMap['harga_barang'],
+          deskripsi: barangMap['deskripsi'],
+          kelipatan: barangMap['kelipatan'],
+          tgl_publish: DateTime.parse(barangMap['tgl_publish']),
+          tgl_expired: DateTime.parse(barangMap['tgl_expired']),
+          foto_barang: barangMap['foto_barang'], // changed from decodeBase64 to just assign the value
+          foto_barang_depan: barangMap['foto_barang_depan'],
+          foto_barang_belakang: barangMap['foto_barang_belakang'],
+          foto_barang_kanan: barangMap['foto_barang_kanan'],
+          foto_barang_kiri: barangMap['foto_barang_kiri'],
+          status: barangMap['status'],
+          nik: barangMap['nik'],
+        );
+      }).toList();
+      setState(() {
+        barangs = data;
+      });
     } else {
       throw Exception('Failed to load data');
     }
+  } else {
+    throw Exception('Failed to load data');
   }
+}
 
-  Uint8List? decodeBase64(dynamic source) {
-    if (source != null && source is String && source.isNotEmpty) {
-      try {
-        return base64Decode(source);
-      } catch (e) {
-        print('Error decoding base64 string: $e');
-      }
-    }
-    return null;
-  }
+
+
 
 // void _cariBarang(String keyword) {
 //   List<dynamic> filteredBarangs = [];

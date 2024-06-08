@@ -1,12 +1,11 @@
 import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:si_lelang/Bottom/BottomSheetBid.dart';
 import 'package:si_lelang/model/barang.dart';
 import 'package:si_lelang/model/user.dart';
+import 'package:http/http.dart' as http;
 import 'package:si_lelang/database/api.dart';
 
 class DetailBarangPage extends StatefulWidget {
@@ -21,6 +20,7 @@ class DetailBarangPage extends StatefulWidget {
 class _DetailBarangPageState extends State<DetailBarangPage> {
   int _currentIndex = 0;
   User? currentUser;
+  List<String> imageDataList = ['', '', '', '', ''];
 
   @override
   void initState() {
@@ -30,17 +30,16 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
         currentUser = user;
       });
     });
+    getAllImages();
   }
 
   @override
   Widget build(BuildContext context) {
-    List<Image> imageList = [
-      Image.memory(widget.barang.foto_barang!),
-      Image.memory(widget.barang.foto_barang_depan!),
-      Image.memory(widget.barang.foto_barang_belakang!),
-      Image.memory(widget.barang.foto_barang_kanan!),
-      Image.memory(widget.barang.foto_barang_kiri!),
-    ];
+    List<Widget> imageList = imageDataList.map((data) {
+      return data.isNotEmpty
+          ? Image.memory(base64Decode(data), fit: BoxFit.cover, width: double.infinity, height: double.infinity)
+          : const CircularProgressIndicator();
+    }).toList();
 
     bool isUserBarangOwner = currentUser?.nik == widget.barang.nik;
 
@@ -85,7 +84,8 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
                 return Container(
                   width: 8.0,
                   height: 8.0,
-                  margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                  margin: const EdgeInsets.symmetric(
+                      vertical: 10.0, horizontal: 2.0),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _currentIndex == index
@@ -136,8 +136,8 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
                           context: context,
                           judul: widget.barang.nama_barang,
                           harga_barang: widget.barang.harga_barang,
-                          kelipatan: widget.barang.kelipatan, 
-                          nik: currentUser!.nik, 
+                          kelipatan: widget.barang.kelipatan,
+                          nik: currentUser!.nik,
                           id_barang: widget.barang.id_barang,
                         );
                         await bottomSheetBid.show();
@@ -145,7 +145,6 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
                     },
               child: const Text('Ikuti Lelang / Tawar Barang'),
             ),
-
             if (currentUser != null)
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -162,15 +161,17 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
 
   Future<User> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? usernik = prefs.getString('nik') ?? '';
-    if (usernik.isNotEmpty) {
+    String? usernik = prefs.getString('nik');
+    if (usernik != null && usernik.isNotEmpty) {
       String userName = prefs.getString('nama') ?? '';
       String userKelamin = prefs.getString('jenis_kelamin') ?? '';
       String userTempatLahir = prefs.getString('tempat_lahir') ?? '';
-      DateTime userTanggalLahir = DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ?? DateTime.now();
+      DateTime userTanggalLahir =
+          DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ??
+              DateTime.now();
       String userAlamat = prefs.getString('alamat') ?? '';
       String userNohp = prefs.getString('nohp') ?? '';
-      Uint8List userFoto = base64Decode(prefs.getString('foto') ?? '');
+      String userFoto = prefs.getString('foto') ?? '';
       String userEmail = prefs.getString('email') ?? '';
 
       User user = User(
@@ -187,6 +188,34 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
       return user;
     } else {
       throw Exception('No user data found in SharedPreferences');
+    }
+  }
+
+  void getAllImages() async {
+    List<String> imagePaths = [
+      widget.barang.foto_barang,
+      widget.barang.foto_barang_depan,
+      widget.barang.foto_barang_belakang,
+      widget.barang.foto_barang_kanan,
+      widget.barang.foto_barang_kiri,
+    ];
+
+    for (int i = 0; i < imagePaths.length; i++) {
+      if (imagePaths[i].isNotEmpty) {
+        try {
+          final response = await http.get(
+              Uri.parse('${Api.urlfoto}?image_path=${imagePaths[i]}'));
+          if (response.statusCode == 200) {
+            String data = json.decode(response.body)['base64Image'];
+            if (!mounted) return;
+            setState(() {
+              imageDataList[i] = data.replaceAll(RegExp(r'\s'), '');
+            });
+          }
+        } catch (e) {
+          // Handle errors
+        }
+      }
     }
   }
 }

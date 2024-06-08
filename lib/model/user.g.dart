@@ -14,7 +14,7 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       tanggal_lahir: DateTime.parse(json['tanggal_lahir'] as String),
       alamat: json['alamat'] as String,
       nohp: json['nohp'] as String,
-      foto: User._uint8ListFromBase64(json['foto'] as String),
+      foto: json['foto'] as String,
       email: json['email'] as String,
       password: json['password'] as String? ?? '',
     );
@@ -27,7 +27,7 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
       'tanggal_lahir': instance.tanggal_lahir.toIso8601String(),
       'alamat': instance.alamat,
       'nohp': instance.nohp,
-      'foto': User._uint8ListToBase64(instance.foto),
+      'foto': instance.foto,
       'email': instance.email,
       'password': instance.password,
     };

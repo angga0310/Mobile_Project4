@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:si_lelang/HomePage.dart';
@@ -25,10 +23,13 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
         String userName = prefs.getString('nama') ?? '';
         String userKelamin = prefs.getString('jenis_kelamin') ?? '';
         String userTempatLahir = prefs.getString('tempat_lahir') ?? '';
-        DateTime userTanggalLahir = DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ?? DateTime.now();
+        DateTime userTanggalLahir =
+            DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ??
+                DateTime.now();
         String userAlamat = prefs.getString('alamat') ?? '';
         String userNohp = prefs.getString('nohp') ?? '';
-        Uint8List userFoto = base64Decode(prefs.getString('foto') ?? '');
+        String userFotoPath = prefs.getString('foto') ??
+            ''; // Mengambil path file foto dari SharedPreferences
         String userEmail = prefs.getString('email') ?? '';
 
         User user = User(
@@ -39,7 +40,7 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
           tanggal_lahir: userTanggalLahir,
           alamat: userAlamat,
           nohp: userNohp,
-          foto: userFoto,
+          foto: userFotoPath, // Menggunakan path file foto
           email: userEmail,
         );
 
@@ -51,12 +52,12 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
           ),
         );
       } else {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => Loginpage()),
-              );
-            }
-          });
-        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => Loginpage()),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
