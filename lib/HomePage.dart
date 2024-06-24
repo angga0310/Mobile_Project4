@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
   String namaUser = '';
   final TextEditingController _searchController = TextEditingController();
 
-  Future<void> _onItemTapped(int index) async {
+Future<void> _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
       if (_selectedIndex == 0) {
@@ -288,7 +288,8 @@ class _HomePageState extends State<HomePage> {
                         child: GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 10,
@@ -370,11 +371,12 @@ class _HomePageState extends State<HomePage> {
               itemBuilder: (context, index) {
                 var barang = barangs[index];
                 return BarangCard(
-                    foto_barang: barang.foto_barang,
-                    nama: barang.nama_barang,
-                    deskripsi: barang.deskripsi,
-                    harga_barang: barang.harga_barang,
-                    barang: barang);
+                  foto_barang: barang.foto_barang,
+                  nama: barang.nama_barang,
+                  deskripsi: barang.deskripsi,
+                  harga_barang: barang.harga_barang,
+                  barang: barang,
+                );
               },
             ),
           ),
@@ -400,7 +402,7 @@ class _HomePageState extends State<HomePage> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
-                        'Riwayat Tawaran',
+                        'Pembayaran',
                         style: TextStyle(
                           fontSize: 24,
                           fontFamily: 'Lexend',
@@ -408,7 +410,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ),
-                    Expanded(
+                    Expanded( 
                       child: ListView.builder(
                         itemCount: snapshot.data!.length,
                         itemBuilder: (context, index) {
@@ -473,10 +475,12 @@ class _HomePageState extends State<HomePage> {
                                           height: 40,
                                           child: ElevatedButton(
                                             onPressed: () {
-                                              Get.to(PembayaranPage(),
-                                              arguments: {
-                                                'id_barang': item['id_barang'], // Meneruskan id_barang ke halaman pembayaran
-                                              },
+                                              Get.to(
+                                                PembayaranPage(),
+                                                arguments: {
+                                                  'id_barang': item[
+                                                      'id_barang'], // Meneruskan id_barang ke halaman pembayaran
+                                                },
                                               );
                                             },
                                             style: ElevatedButton.styleFrom(
@@ -951,18 +955,47 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-
-void _getBarang({bool onlyOpen = false}) async {
+Future<void> _getBarang({bool onlyOpen = false}) async {
   var url = onlyOpen ? Api.urlgetopenbarang : Api.urlgetbarang;
   var response = await http.get(Uri.parse(url));
 
   if (response.statusCode == 200) {
     var responseBody = jsonDecode(response.body);
-    // print(responseBody); // Tambahkan ini untuk melihat respons dari server
+    print('Response Body: $responseBody');
 
-    if (responseBody['success'] == true) {
-      List<Barang> data = (responseBody['data'] as List).map((barangMap) {
+    // Jika responseBody adalah Map
+    if (responseBody is Map<String, dynamic>) {
+      if (responseBody['success'] == true) {
+        List<Barang> data = (responseBody['data'] as List).map((barangMap) {
+          return Barang(
+            id_barang: barangMap['id_barang'],
+            nama_barang: barangMap['nama_barang'],
+            kategori_barang: barangMap['kategori_barang'],
+            kota: barangMap['kota'],
+            provinsi: barangMap['provinsi'],
+            harga_barang: barangMap['harga_barang'],
+            deskripsi: barangMap['deskripsi'],
+            kelipatan: barangMap['kelipatan'],
+            tgl_publish: DateTime.parse(barangMap['tgl_publish']),
+            tgl_expired: DateTime.parse(barangMap['tgl_expired']),
+            foto_barang: barangMap['foto_barang'], // Tetap gunakan value langsung
+            foto_barang_depan: barangMap['foto_barang_depan'],
+            foto_barang_belakang: barangMap['foto_barang_belakang'],
+            foto_barang_kanan: barangMap['foto_barang_kanan'],
+            foto_barang_kiri: barangMap['foto_barang_kiri'],
+            status: barangMap['status'],
+            nik: barangMap['nik'],
+          );
+        }).toList();
+        setState(() {
+          barangs = data;
+        });
+      } else {
+        throw Exception('Failed to load data');
+      }
+    } else if (responseBody is List) {
+      // Jika responseBody adalah List
+      List<Barang> data = responseBody.map((barangMap) {
         return Barang(
           id_barang: barangMap['id_barang'],
           nama_barang: barangMap['nama_barang'],
@@ -974,7 +1007,7 @@ void _getBarang({bool onlyOpen = false}) async {
           kelipatan: barangMap['kelipatan'],
           tgl_publish: DateTime.parse(barangMap['tgl_publish']),
           tgl_expired: DateTime.parse(barangMap['tgl_expired']),
-          foto_barang: barangMap['foto_barang'], // changed from decodeBase64 to just assign the value
+          foto_barang: barangMap['foto_barang'], // Tetap gunakan value langsung
           foto_barang_depan: barangMap['foto_barang_depan'],
           foto_barang_belakang: barangMap['foto_barang_belakang'],
           foto_barang_kanan: barangMap['foto_barang_kanan'],
@@ -987,7 +1020,7 @@ void _getBarang({bool onlyOpen = false}) async {
         barangs = data;
       });
     } else {
-      throw Exception('Failed to load data');
+      throw Exception('Struktur respons tidak terduga');
     }
   } else {
     throw Exception('Failed to load data');
@@ -995,59 +1028,37 @@ void _getBarang({bool onlyOpen = false}) async {
 }
 
 
+  Future<User> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? usernik = prefs.getString('nik');
+    if (usernik != null && usernik.isNotEmpty) {
+      String userName = prefs.getString('nama') ?? '';
+      String userKelamin = prefs.getString('jenis_kelamin') ?? '';
+      String userTempatLahir = prefs.getString('tempat_lahir') ?? '';
+      DateTime userTanggalLahir =
+          DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ??
+              DateTime.now();
+      String userAlamat = prefs.getString('alamat') ?? '';
+      String userNohp = prefs.getString('nohp') ?? '';
+      String userFoto = prefs.getString('foto') ?? '';
+      String userEmail = prefs.getString('email') ?? '';
 
-
-// void _cariBarang(String keyword) {
-//   List<dynamic> filteredBarangs = [];
-
-//   if (keyword.isEmpty) {
-//     setState(() {
-//       filteredBarangs.addAll(barangs);
-//     });
-//   } else {
-//     barangs.forEach((barang) {
-//       if (barang.nama.toLowerCase().contains(keyword.toLowerCase())) {
-//         filteredBarangs.add(barang);
-//       }
-//     });
-//   }
-
-//   setState(() {
-//     barangs = filteredBarangs;
-//   });
-// }
-Future<User> _loadUserData() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? usernik = prefs.getString('nik');
-  if (usernik != null && usernik.isNotEmpty) {
-    String userName = prefs.getString('nama') ?? '';
-    String userKelamin = prefs.getString('jenis_kelamin') ?? '';
-    String userTempatLahir = prefs.getString('tempat_lahir') ?? '';
-    DateTime userTanggalLahir =
-        DateTime.tryParse(prefs.getString('tanggal_lahir') ?? '') ??
-            DateTime.now();
-    String userAlamat = prefs.getString('alamat') ?? '';
-    String userNohp = prefs.getString('nohp') ?? '';
-    String userFoto = prefs.getString('foto') ?? '';
-    String userEmail = prefs.getString('email') ?? '';
-
-    User user = User(
-      nik: usernik,
-      nama: userName,
-      jenis_kelamin: userKelamin,
-      tempat_lahir: userTempatLahir,
-      tanggal_lahir: userTanggalLahir,
-      alamat: userAlamat,
-      nohp: userNohp,
-      foto: userFoto,
-      email: userEmail,
-    );
-    return user;
-  } else {
-    throw Exception('No user data found in SharedPreferences');
+      User user = User(
+        nik: usernik,
+        nama: userName,
+        jenis_kelamin: userKelamin,
+        tempat_lahir: userTempatLahir,
+        tanggal_lahir: userTanggalLahir,
+        alamat: userAlamat,
+        nohp: userNohp,
+        foto: userFoto,
+        email: userEmail,
+      );
+      return user;
+    } else {
+      throw Exception('No user data found in SharedPreferences');
+    }
   }
-}
-
 
   Future<List<dynamic>> dataHistory() async {
     var url = Uri.parse('${Api.urlhistory}?nik=${currentUser.nik}');
@@ -1073,10 +1084,8 @@ Future<User> _loadUserData() async {
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
-      List<dynamic> filteredData = data
-          .where((item) =>
-              item['status'] == 'berhasil')
-          .toList();
+      List<dynamic> filteredData =
+          data.where((item) => item['status'] == 'berhasil').toList();
       return filteredData;
     } else {
       throw Exception('Failed to load data: ${response.body}');

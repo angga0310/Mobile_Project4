@@ -83,7 +83,7 @@ class _BarangCardState extends State<BarangCard> {
                           ),
                   ),
                 ),
-                if (widget.barang.status == 'Open')
+                if (widget.barang.status.toLowerCase() == 'open')
                   Positioned(
                     top: 8,
                     left: 8,

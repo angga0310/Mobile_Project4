@@ -14,6 +14,8 @@ class BottomSheetBid {
   final int kelipatan;
   final String nik;
   final int id_barang;
+  late TextEditingController bidController;
+
 
   BottomSheetBid({
     required this.context,
@@ -24,98 +26,125 @@ class BottomSheetBid {
     required this.id_barang,
   });
 
-  Future<String?> show() async {
-    Completer<String?> completer = Completer<String?>();
-    final TextEditingController bidController = TextEditingController();
+Future<String?> show() async {
+  Completer<String?> completer = Completer<String?>();
+  final TextEditingController bidController = TextEditingController();
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16.0,
-            right: 16.0,
-            top: 16.0,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  judul,
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 16.0,
+          right: 16.0,
+          top: 16.0,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                judul,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Text(
+                  'Harga Barang: $harga_barang',
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
                   ),
                 ),
-                SizedBox(height: 16),
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
+              ),
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Text(
+                  'Kelipatan Penawaran: $kelipatan',
+                  style: TextStyle(
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: bidController,
+                decoration: InputDecoration(
+                  labelText: 'Masukkan Tawaran Anda',
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8.0),
                   ),
-                  child: Text(
-                    'Harga Barang: $harga_barang',
-                    style: TextStyle(
-                      fontSize: 18,
-                    ),
-                  ),
                 ),
-                SizedBox(height: 16),
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: Text(
-                    'Kelipatan Penawaran: $kelipatan',
-                    style: TextStyle(
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 16),
-                TextField(
-                  controller: bidController,
-                  decoration: InputDecoration(
-                    labelText: 'Masukkan Tawaran Anda',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [ThousandsFormatter()],
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () async {
-                    String bidValue = bidController.text.replaceAll(',', '');
+                keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsFormatter()],
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () async {
+                  String bidValue = bidController.text.replaceAll(',', '');
+                  int bidIntValue = int.parse(bidValue);
+                  int minimumBid = harga_barang + kelipatan;
+
+                  if (bidIntValue < minimumBid) {
+                    // Tampilkan pesan kesalahan jika tawaran tidak sesuai dengan kelipatan
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('Error'),
+                          content: Text(
+                            'Tawaran harus lebih besar dari atau sama dengan $minimumBid',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text('OK'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  } else {
+                    // Lanjutkan dengan tawaran jika memenuhi syarat
                     await bidBarang(bidValue);
                     completer.complete(bidValue);
                     Navigator.pop(context);
-                  //  Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
-                  },
-                  child: Center(
-                    child: Text('Ajukan Tawaran'),
-                  ),
+                  }
+                },
+                child: Center(
+                  child: Text('Ajukan Tawaran'),
                 ),
-                SizedBox(height: 12)
-              ],
-            ),
+              ),
+              SizedBox(height: 12)
+            ],
           ),
-        );
-      },
-    );
-    return completer.future;
-  }
+        ),
+      );
+    },
+  );
+  return completer.future;
+}
+
 
   Future<void> bidBarang(String hargaBid) async {
     try {

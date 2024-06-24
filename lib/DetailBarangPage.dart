@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:si_lelang/Bottom/BottomSheetBid.dart';
 import 'package:si_lelang/model/barang.dart';
@@ -37,8 +38,19 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
   Widget build(BuildContext context) {
     List<Widget> imageList = imageDataList.map((data) {
       return data.isNotEmpty
-          ? Image.memory(base64Decode(data), fit: BoxFit.cover, width: double.infinity, height: double.infinity)
-          : const CircularProgressIndicator();
+          ? Image.memory(base64Decode(data),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity)
+          : const Center(
+              child: SizedBox(
+                height: 30,
+                width: 30,
+                child: CircularProgressIndicator(
+                  color: Color(0xFF35755D),
+                ),
+              ),
+            );
     }).toList();
 
     bool isUserBarangOwner = currentUser?.nik == widget.barang.nik;
@@ -61,7 +73,7 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
       ),
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CarouselSlider(
               items: imageList,
@@ -117,7 +129,7 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Harga: Rp ${widget.barang.harga_barang}',
+                    'Harga: Rp ${NumberFormat.decimalPattern().format(widget.barang.harga_barang)}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -127,32 +139,60 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
                 ],
               ),
             ),
-            ElevatedButton(
-              onPressed: isUserBarangOwner
-                  ? null
-                  : () async {
-                      if (currentUser != null) {
-                        BottomSheetBid bottomSheetBid = BottomSheetBid(
-                          context: context,
-                          judul: widget.barang.nama_barang,
-                          harga_barang: widget.barang.harga_barang,
-                          kelipatan: widget.barang.kelipatan,
-                          nik: currentUser!.nik,
-                          id_barang: widget.barang.id_barang,
-                        );
-                        await bottomSheetBid.show();
-                      }
-                    },
-              child: const Text('Ikuti Lelang / Tawar Barang'),
-            ),
-            if (currentUser != null)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'User: ${currentUser!.nama}',
-                  style: const TextStyle(fontFamily: 'Lexend', fontSize: 16),
+            SizedBox(height: 40,),
+            Center(
+              child: Container(
+                width: 390,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: (widget.barang.status.toLowerCase() == 'open' &&
+                          !isUserBarangOwner)
+                      ? () async {
+                          if (currentUser != null) {
+                            BottomSheetBid bottomSheetBid = BottomSheetBid(
+                              context: context,
+                              judul: widget.barang.nama_barang,
+                              harga_barang: widget.barang.harga_barang,
+                              kelipatan: widget.barang.kelipatan,
+                              nik: currentUser!.nik,
+                              id_barang: widget.barang.id_barang,
+                            );
+                            await bottomSheetBid.show();
+                          }
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize:
+                        Size(260, 60), // Sesuaikan dengan tinggi tombol
+                    backgroundColor: (widget.barang.status.toLowerCase() ==
+                                'open' &&
+                            !isUserBarangOwner)
+                        ? const Color(0xFF35755D)
+                        : const Color(
+                            0xFFC4C4C4), // Ubah warna latar belakang sesuai kondisi
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Container(
+                    width: 260,
+                    height: 30,
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'Ikuti Lelang', // Ubah teks sesuai kebutuhan
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontFamily: 'Lexend',
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                  ),
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -203,8 +243,8 @@ class _DetailBarangPageState extends State<DetailBarangPage> {
     for (int i = 0; i < imagePaths.length; i++) {
       if (imagePaths[i].isNotEmpty) {
         try {
-          final response = await http.get(
-              Uri.parse('${Api.urlfoto}?image_path=${imagePaths[i]}'));
+          final response = await http
+              .get(Uri.parse('${Api.urlfoto}?image_path=${imagePaths[i]}'));
           if (response.statusCode == 200) {
             String data = json.decode(response.body)['base64Image'];
             if (!mounted) return;

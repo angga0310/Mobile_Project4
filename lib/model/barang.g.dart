@@ -7,12 +7,12 @@ part of 'barang.dart';
 // **************************************************************************
 
 Barang _$BarangFromJson(Map<String, dynamic> json) => Barang(
-      id_barang: (json['id_barang'] as num).toInt(),
+      id_barang: json['id_barang'] as int,
       nama_barang: json['nama_barang'] as String,
       kategori_barang: json['kategori_barang'] as String,
       kota: json['kota'] as String,
       provinsi: json['provinsi'] as String,
-      harga_barang: (json['harga_barang'] as num).toInt(),
+      harga_barang:  json['harga_barang'] as int,
       deskripsi: json['deskripsi'] as String,
       kelipatan: (json['kelipatan'] as num).toInt(),
       tgl_publish: DateTime.parse(json['tgl_publish'] as String),
